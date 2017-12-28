@@ -1,6 +1,7 @@
 package observer
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
@@ -26,17 +27,19 @@ type (
 		host, user, password string
 		port                 int
 		timeout              int
+		tlsConfig            *tls.Config
 	}
 )
 
 //New is the new Object
-func New(host, user, password string, port, timeout int) *Object {
+func New(host, user, password string, port, timeout int, tlsConfig *tls.Config) *Object {
 	return &Object{
-		host:     host,
-		user:     user,
-		password: password,
-		port:     port,
-		timeout:  timeout,
+		host:      host,
+		user:      user,
+		password:  password,
+		port:      port,
+		timeout:   timeout,
+		tlsConfig: tlsConfig,
 	}
 }
 
@@ -55,6 +58,11 @@ func (obs *Object) Available() bool {
 func (obs *Object) Dial() (*amqp.Connection, error) {
 	if !obs.Available() {
 		return nil, errors.New("Observer not available")
+	}
+
+	if obs.tlsConfig != nil {
+		connect := fmt.Sprintf("amqps://%s:%s@%s:%d/", obs.user, obs.password, obs.host, obs.port)
+		return amqp.DialTLS(connect, obs.tlsConfig)
 	}
 
 	connect := fmt.Sprintf("amqp://%s:%s@%s:%d/", obs.user, obs.password, obs.host, obs.port)
