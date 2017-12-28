@@ -29,18 +29,41 @@ type (
 		timeout              int
 		tlsConfig            *tls.Config
 	}
+
+	Option func(*Object) error
 )
 
 //New is the new Object
-func New(host, user, password string, port, timeout int, tlsConfig *tls.Config) *Object {
+func New(host, user, password string, port, timeout int) *Object {
 	return &Object{
-		host:      host,
-		user:      user,
-		password:  password,
-		port:      port,
-		timeout:   timeout,
-		tlsConfig: tlsConfig,
+		host:     host,
+		user:     user,
+		password: password,
+		port:     port,
+		timeout:  timeout,
 	}
+}
+
+//WithTLSConfig configuration for TLS
+func WithTLSConfig(tlsConfig *tls.Config) Option {
+	return func(obs *Object) error {
+		if obs == nil {
+			errors.New("missing observer")
+		}
+		obs.tlsConfig = tlsConfig
+		return nil
+	}
+}
+
+//Set Option for Object
+func (obs *Object) Set(opts ...Option) *Object {
+	for _, fn := range opts {
+		if e := fn(obs); e != nil {
+			panic(e)
+		}
+	}
+
+	return obs
 }
 
 //Available ...
